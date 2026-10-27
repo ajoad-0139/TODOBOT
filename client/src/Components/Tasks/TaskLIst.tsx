@@ -1,26 +1,39 @@
-import { useEffect, useState } from 'react'
+import  { useEffect, useState } from 'react'
 import TaskCard from './TaskCard'
 import { getTasks } from '../../Services/taskService'
 import type { Task } from '../../Types/task'
 
-const TaskList = () => {
+interface TaskListProps {
+  refreshKey: number
+}
+
+const TaskList = ({ refreshKey }: TaskListProps) => {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let ignore = false
+
     const fetchTasks = async () => {
       try {
         const data = await getTasks()
-        setTasks(data)
+        if (!ignore) {
+          setTasks(data)
+          setError(null)
+        }
       } catch (err) {
-        setError('Could not load tasks. Please try again later.')
+        if (!ignore) setError('Could not load tasks. Please try again later.')
       } finally {
-        setLoading(false)
+        if (!ignore) setLoading(false)
       }
     }
+
     fetchTasks()
-  }, [])
+    return () => {
+      ignore = true
+    }
+  }, [refreshKey])
 
   return (
     <div className="flex flex-col gap-5 lg:flex-1 lg:min-h-0">

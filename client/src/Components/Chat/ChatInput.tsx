@@ -1,9 +1,17 @@
+import React from 'react'
+
 interface ChatInputProps {
   value: string
   onChange: (value: string) => void
+  onSend: () => void
+  disabled: boolean
 }
 
-const ChatInput = ({ value, onChange }: ChatInputProps) => {
+const ChatInput = ({ value, onChange, onSend, disabled }: ChatInputProps) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') onSend()
+  }
+
   return (
     <div className="shrink-0 flex flex-col gap-1 px-4 py-3 bg-white border-2 border-[#6b94e8] rounded-2xl">
       <label className="text-xs font-bold tracking-wide text-[#4f73c4]">YOUR INSTRUCTION</label>
@@ -11,6 +19,7 @@ const ChatInput = ({ value, onChange }: ChatInputProps) => {
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
         placeholder="Type a task instruction..."
         className="w-full text-base text-[#18284b] outline-none placeholder:text-[#9aa6bd]"
       />
@@ -18,7 +27,9 @@ const ChatInput = ({ value, onChange }: ChatInputProps) => {
         <p className="text-xs text-[#a3adc2]">e.g. Complete the weekly report</p>
         <button
           type="button"
-          className="px-6 py-2 text-sm font-bold text-white bg-[#2f5bcc] rounded-lg hover:bg-[#2a51b8]"
+          onClick={onSend}
+          disabled={disabled}
+          className="px-6 py-2 text-sm font-bold text-white bg-[#2f5bcc] rounded-lg hover:bg-[#2a51b8] disabled:bg-[#9db3e6] disabled:cursor-not-allowed"
         >
           Send
         </button>
