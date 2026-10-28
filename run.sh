@@ -8,7 +8,6 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ---- adjust these if your folders are named differently ----
 SERVER_DIR="$ROOT_DIR/server"
 CLIENT_DIR="$ROOT_DIR/client"            # <- your React project folder
-VENV_ACTIVATE="$SERVER_DIR/venv/bin/activate"
 QDRANT_CONTAINER="qdrant"
 QDRANT_STORAGE="$ROOT_DIR/qdrant_storage"
 QDRANT_PORT=6333
@@ -85,13 +84,29 @@ if ! (echo > "/dev/tcp/localhost/$QDRANT_PORT") 2>/dev/null; then
   exit 1
 fi
 
-# ---- 2. Backend ----
-BACKEND_CMD="cd $(printf '%q' "$SERVER_DIR")"
-if [ -f "$VENV_ACTIVATE" ]; then
-  BACKEND_CMD="$BACKEND_CMD && source $(printf '%q' "$VENV_ACTIVATE")"
+# ---- 2. Backend (a small generated script handles the virtual environment) ----
+BACKEND_SCRIPT="$(mktemp /tmp/taskflow_backend.XXXXXX)"
+{
+  echo "cd $(printf '%q' "$SERVER_DIR") || exit 1"
+  cat <<'EOF'
+VENV_DIR=""
+for d in venv .venv; do
+  if [ -f "$d/bin/activate" ]; then VENV_DIR="$d"; break; fi
+done
+if [ -z "$VENV_DIR" ]; then
+  echo "No virtual environment found - creating server/venv ..."
+  python3 -m venv venv || { echo "Could not create venv (try: sudo apt install python3-venv)"; exit 1; }
+  VENV_DIR="venv"
 fi
-BACKEND_CMD="$BACKEND_CMD && python3 main.py"
-open_terminal "Backend" "$BACKEND_CMD"
+source "$VENV_DIR/bin/activate"
+if ! python -c "import uvicorn, fastapi" 2>/dev/null; then
+  echo "Installing requirements (the first run can take several minutes)..."
+  pip install -r requirements.txt || { echo "pip install failed"; exit 1; }
+fi
+python main.py
+EOF
+} > "$BACKEND_SCRIPT"
+open_terminal "Backend" "bash $(printf '%q' "$BACKEND_SCRIPT")"
 
 # ---- 3. Frontend ----
 FRONTEND_CMD="cd $(printf '%q' "$CLIENT_DIR") && { [ -d node_modules ] || npm install; } && npm run dev"

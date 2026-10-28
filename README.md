@@ -160,6 +160,7 @@ VITE_API_BASE_URL=http://localhost:8000
 ### One command
 
 ```bash
+cd TODOBOT
 chmod +x run.sh
 ./run.sh          # starts Qdrant (Docker), backend and frontend in separate terminals
 ./run.sh stop     # stops the Qdrant container
